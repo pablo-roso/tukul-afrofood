@@ -1,45 +1,74 @@
-// Tukul AfroFood — Website-Entwurf
-// Minimales Vanilla-JS: mobiles Menü, aktuelles Jahr, Kontaktformular-Demo (nicht funktional)
-
+/* ============================================================
+   Tukul AfroFood — Seitenlogik
+   Mobilmenü, Öffnungsstatus und laufender Tag. Montag bis Samstag
+   gleiche Zeiten, sonntags Ruhetag — der einzige Fall, den der
+   Status gesondert benennt.
+   ============================================================ */
 (function () {
-  "use strict";
+  'use strict';
 
-  /* Mobiles Menü öffnen/schließen */
-  var navToggle = document.getElementById("navToggle");
-  var primaryNav = document.getElementById("primaryNav");
-
-  if (navToggle && primaryNav) {
-    navToggle.addEventListener("click", function () {
-      var isOpen = primaryNav.classList.toggle("is-open");
-      navToggle.setAttribute("aria-expanded", String(isOpen));
-      navToggle.setAttribute("aria-label", isOpen ? "Menü schließen" : "Menü öffnen");
+  var toggle = document.getElementById('navToggle');
+  var nav = document.getElementById('mainNav');
+  if (toggle && nav) {
+    toggle.addEventListener('click', function () {
+      var open = nav.classList.toggle('open');
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      toggle.setAttribute('aria-label', open ? 'Menü schließen' : 'Menü öffnen');
     });
-
-    // Menü schließen, sobald ein Link angeklickt wird (mobile Anker-Navigation)
-    primaryNav.querySelectorAll("a").forEach(function (link) {
-      link.addEventListener("click", function () {
-        primaryNav.classList.remove("is-open");
-        navToggle.setAttribute("aria-expanded", "false");
-        navToggle.setAttribute("aria-label", "Menü öffnen");
-      });
+    nav.addEventListener('click', function (e) {
+      if (e.target.tagName !== 'A') return;
+      nav.classList.remove('open');
+      toggle.setAttribute('aria-expanded', 'false');
     });
   }
 
-  /* Aktuelles Jahr im Footer */
-  var yearEl = document.getElementById("year");
-  if (yearEl) {
-    yearEl.textContent = String(new Date().getFullYear());
+  var OPEN = 11.5, CLOSE = 19;
+
+  function fmt(v) {
+    var h = Math.floor(v), m = Math.round((v - h) * 60);
+    return h + ':' + (m < 10 ? '0' + m : m);
   }
 
-  /* Kontaktformular: rein clientseitige Demo, keine echte Übertragung */
-  var contactForm = document.getElementById("contactForm");
-  var formStatus = document.getElementById("formStatus");
+  var now = new Date();
+  var day = now.getDay();
+  var dec = now.getHours() + now.getMinutes() / 60;
+  var isSunday = day === 0;
+  var open = !isSunday && dec >= OPEN && dec < CLOSE;
 
-  if (contactForm && formStatus) {
-    contactForm.addEventListener("submit", function (event) {
-      event.preventDefault();
-      formStatus.textContent =
-        "Dies ist ein Website-Entwurf – das Formular sendet aktuell noch keine echten Nachrichten.";
-    });
+  var label;
+  if (open) {
+    label = 'Jetzt geöffnet — bis ' + fmt(CLOSE) + ' Uhr';
+  } else if (isSunday) {
+    label = 'Sonntag ist Ruhetag — morgen wieder ab ' + fmt(OPEN) + ' Uhr';
+  } else if (dec < OPEN) {
+    label = 'Noch geschlossen — heute ab ' + fmt(OPEN) + ' Uhr';
+  } else {
+    label = day === 6
+      ? 'Feierabend — Sonntag Ruhetag, am Montag wieder ab ' + fmt(OPEN) + ' Uhr'
+      : 'Feierabend — morgen wieder ab ' + fmt(OPEN) + ' Uhr';
   }
+
+  var badge = document.getElementById('statusBadge');
+  var text = document.getElementById('statusText');
+  if (badge && text) {
+    badge.hidden = false;
+    badge.classList.add(open ? 'is-open' : 'is-closed');
+    text.textContent = label;
+  }
+
+  var headerStatus = document.getElementById('headerStatus');
+  if (headerStatus) {
+    headerStatus.hidden = false;
+    headerStatus.textContent = open ? 'offen bis ' + fmt(CLOSE) : isSunday ? 'Ruhetag' : 'gerade zu';
+    if (open) headerStatus.classList.add('is-open');
+  }
+
+  var list = document.getElementById('hoursList');
+  if (list) {
+    var row = list.querySelector('[data-day="' + day + '"]');
+    if (row) row.classList.add('is-today');
+  }
+
+  var year = document.getElementById('year');
+  if (year) year.textContent = new Date().getFullYear();
 })();
